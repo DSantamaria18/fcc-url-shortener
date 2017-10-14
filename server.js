@@ -91,9 +91,7 @@ async function getUrl(url) {
             return obj.url;
           });
 
-          var shortUrlList = data.map((obj) => {
-            return obj.shortUrl;
-          });
+       
         })
       }
     })
@@ -149,6 +147,7 @@ function InvalidURLException(url) {
   this.key = url;
 }
         
+/*
 function handleShortenUrl2 (req, res) {
   var result;
   var oldUrl = req.params.url;
@@ -168,6 +167,7 @@ function handleShortenUrl2 (req, res) {
   };
   res.send(result);
 };
+*/
 
 /*
  function insertUrl(url, res, db, callback){
@@ -191,6 +191,7 @@ function handleShortenUrl2 (req, res) {
 };
 */
 
+/*
  function save(err, url, newLink, res, db) {
     if (err) throw err;
 
@@ -215,7 +216,7 @@ function handleShortenUrl2 (req, res) {
       console.log('Saved ' + result);
     });
   }
-
+*/
 
 
 
