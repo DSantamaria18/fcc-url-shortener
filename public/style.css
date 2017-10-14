@@ -1,0 +1,60 @@
+/* styles */
+/* called by your view template */
+
+/* You might want to try something fancier: */
+/* less: http://lesscss.org/ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: helvetica, arial, sans-serif;
+  margin: 25px;
+}
+
+h1 {
+  font-weight: bold;
+  text-align: center;
+  font-size: 36px;  
+}
+
+.fcc-api {
+  font-weight: bold;
+  text-align: center;
+}
+
+p {
+  max-width: 600px; 
+}
+
+li {
+  margin-bottom: 5px;
+}
+
+quote {
+  padding-left: 25px;
+}
+
+code {
+  padding-left: 25px;
+  color: red;
+}
+
+h6 {
+  padding-left: 25px;
+}
+
+footer {
+  margin-top: 50px;
+  padding-top: 25px;
+  border-top: 1px solid lightgrey;
+}
+
+.input-group {
+  margin-top: 50px;
+}
+
+footer > a {
+  color: #BBBBBB;
+}
