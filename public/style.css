@@ -58,3 +58,10 @@ footer {
 footer > a {
   color: #BBBBBB;
 }
+
+#link {
+  margin-top: 25px;
+  font-weight: bolder;
+  font-size: 36px;
+  text-align: center;
+}
