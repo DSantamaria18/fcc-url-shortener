@@ -72,6 +72,7 @@ function handleShortenUrl(request, response){
         reject(new ShortenException(ex));
       }
     }
+    console.log("RESULT: " + result.short_url);
     response.send(result);
   })
 }
