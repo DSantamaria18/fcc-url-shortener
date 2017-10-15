@@ -43,7 +43,7 @@ function handleShortenUrl(request, response){
       console.log(oldUrl + " is a valid URI");
       try{
         var shortUrl = await shortenUrl(oldUrl);
-        console.log("ShortURL: " + shortUrl);
+        //console.log("Shortened URL: " + shortUrl);
         var result = {
           "original_url": oldUrl, 
           "short_url": shortUrl 
@@ -57,76 +57,108 @@ function handleShortenUrl(request, response){
 }
 
 async function getShortUrl(url) {
-  return new Promise(function(resolve, reject){
+  return new Promise(async function(resolve, reject){
     mongoClient.connect(dbConn, async function (err, db) {
       if (err) {
-        console.log("Unable to connect to server", err);
+        console.log("Unable to connect to server [getShortUrl]", err);
         reject(new DataBaseConnectionException(err));
       } else {
-        console.log("Connected to server");
-        db.collection('urls').find().toArray((err, data) => {
+        console.log("Connected to server [getShortUrl]");
+        db.collection("urls").find({"original_url": url}).toArray(async function(err, data){
           if (err) throw new err;
-          var shortUrlList = data.map((obj) => {
-            return obj.shortUrl;
-          });
-          return shortUrlList.indexOf(url);
-        })   
+          if(data.length === 0) {
+            console.log("No record found for " + url);
+            resolve(-1);
+          } else {
+            //console.log(data[0].short_url);
+            resolve(data[0].short_url);  
+          }
+        });
+        db.close();
+      }
+    })
+  })
+}
+
+async function findShortUrl(url) {
+  return new Promise(async function(resolve, reject){
+    mongoClient.connect(dbConn, async function (err, db) {
+      if (err) {
+        console.log("Unable to connect to server [getShortUrl]", err);
+        reject(new DataBaseConnectionException(err));
+      } else {
+        console.log("Connected to server [getShortUrl]");
+        db.collection("urls").find({"short_url": url}).toArray(async function(err, data){
+          if (err) throw new err;
+          if(data.length === 0) {
+            console.log("No record found for " + url);
+            resolve(-1);
+          } else {
+            //console.log(data[0].short_url);
+            resolve(data[0].short_url);  
+          }
+        });
+        db.close();
       }
     })
   })
 }
 
 async function getUrl(url) {
-  return new Promise(function(resolve, reject){
+  return new Promise(async function(resolve, reject){
     mongoClient.connect(dbConn, async function (err, db) {
       if (err) {
-        console.log("Unable to connect to server", err);
+        console.log("Unable to connect to server [getUrl]", err);
         reject(new DataBaseConnectionException(err));
       } else {
-        console.log("Connected to server");
-        db.collection('urls').find().toArray((err, data) => {
+        console.log("Connected to server [getUrl]");
+        db.collection("urls").find({"original_url": url}, {"original_url" : 1}).toArray( async function(err, data){
           if (err) throw new err;
-
-          var urlList = data.map((obj) => {
-            return obj.url;
-          });
-
-       
+          //console.log(data.length);
+          if (data.length === 0) {
+            console.log(url + " doesn't exist in the DB...");
+            resolve(-1);
+          } else {
+            //console.log("[getUrl] DATA: " + data[0].original_url);
+            resolve(data[0].original_url);   
+          }
+          db.close();
         })
       }
     })
   })
 }
       
-      
-
 async function shortenUrl(oldUrl){
-  return new Promise(function (resolve, reject){
-    mongoClient.connect(dbConn, async function (err, db) {
-      if (err) {
-        console.log("Unable to connect to server", err);
-        reject(new DataBaseConnectionException(err));
-      } else {
-        console.log("Connected to server");
-        db.collection('urls').find().toArray((err, data) => {
-        if (err) throw new err;
+  return new Promise(async function (resolve, reject){
+    var shortLink;
+    var longUrl = await getUrl(oldUrl);
+    console.log("longUrl: " + longUrl);
+    if(longUrl !== -1) {
+      console.log("URL " + oldUrl + " already in DB...");
+      var s =  await getShortUrl(oldUrl);
+      console.log("Short URL: " + s);
+      resolve(s);
+    } else {
+      do {
+        shortLink = generateShortLink();
+        var short =  await  findShortUrl(shortLink);
+        //console.log("short: " + short);
+      } while (short !== -1);
+      var doc = {
+          "original_url": oldUrl, 
+          "short_url": shortLink
+        }
+      insertUrl(doc);
+      resolve (shortLink);
+    }
+  });     
+}
 
-        var shortUrlList = data.map((obj) => {
-          return obj.shortUrl;
-        });
-        var shortLink;
-        do {
-          var num = Math.floor(100000 + Math.random() * 900000);
-          //console.log("Num: " + num.toString());
-          shortLink = process.env.BASE_DOMAIN + num.toString();
-        } //while (getShortUrl(shortLink) != -1);
-          /while (shortUrlList.indexOf(shortLink) != -1);
-          //console.log("ShortLink: " + shortLink);
-          resolve (shortLink);
-        });     
-      }
-    })
-  })
+function generateShortLink(){
+  var num = Math.floor(100000 + Math.random() * 900000);
+      //console.log("Num: " + num.toString());
+  return process.env.BASE_DOMAIN + num.toString();
 }
 
 function DataBaseConnectionException(err) {
@@ -147,78 +179,22 @@ function InvalidURLException(url) {
   this.key = url;
 }
         
-/*
-function handleShortenUrl2 (req, res) {
-  var result;
-  var oldUrl = req.params.url;
-  console.log("Shortening: " + oldUrl);
-  if (validUrl.isUri(oldUrl)){
-    insertUrl(oldUrl, res);
-  
-    result = {
-      "original_url": oldUrl, 
-      "short_url": "https://fccus.glitch.me/8170" 
-    } 
-  } else {
-    result = {
-      "error": "Invalid URL format",
-      "input url": oldUrl
-    }
-  };
-  res.send(result);
-};
-*/
-
-/*
- function insertUrl(url, res, db, callback){
-  console.log("dbConn: " + dbConn);
-  mongoClient.connect(dbConn, function (err, db) {
-    if (err) {
-      console.log("Unable to connect to server", err);
-    } else {
-      console.log("Connected to server");
-      var collection = db.collection('urls');
-      var short = shortenUrl(oldUrl);
-      console.log("Short: " + short);
-      var doc = { 
-        url: url,
-        shortUrl: short
-      };
-      collection.insert(doc);
-      db.close();
-    };
-  });
-};
-*/
-
-/*
- function save(err, url, newLink, res, db) {
-    if (err) throw err;
-
-    // Create new object
-    var urlObj = {
-      "original_url": url,
-      "short_url": newLink
-    };
-
-    // Save object into db.
-    var sites = db.collection('sites');
-    sites.save(urlObj, function(err, result) {
-      if (err) throw err;
-
-      // Send response object
-      // We need to create the object again because
-      // urlObj now contains database id
-      res.send({
-        "original_url": url,
-        "short_url": newLink
-      });
-      console.log('Saved ' + result);
+function insertUrl(doc){
+  return new Promise(function (resolve, reject) {
+    console.log("dbConn: " + dbConn);
+    mongoClient.connect(dbConn, function (err, db) {
+      if (err) {
+        console.log("Unable to connect to server", err);
+        reject(new DataBaseConnectionException(err));
+      } else {
+        console.log("Adding doc to DB...");
+        var collection = db.collection('urls');
+        collection.insert(doc);
+        db.close();
+      }
     });
-  }
-*/
-
-
+  })
+};
 
 // listen for requests :)
 var listener = app.listen(process.env.PORT, function () {
