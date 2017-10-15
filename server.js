@@ -16,8 +16,6 @@ var dbName = process.env.DB_NAME;
 var dbConn = 'mongodb://'+dbUser+':'+dbPass+'@'+dbHost+':'+dbPort+'/'+dbName;
 var mongoClient = mongodb.MongoClient;
 
-
-
 // http://expressjs.com/en/starter/static-files.html
 app.use(express.static('public'));
 
@@ -27,6 +25,28 @@ app.get("/", function (request, response) {
 });
 
 app.get('/new/:url(*)', handleShortenUrl);
+
+app.get('/:identifier', handleRedirect);
+
+// listen for requests :)
+var listener = app.listen(process.env.PORT, function () {
+  console.log('Your app is listening on port ' + listener.address().port);
+});
+
+function handleRedirect(request, response){
+  return new Promise (async function (resolve, reject){
+    var id = request.params.identifier;
+    var shortUrl = process.env.BASE_DOMAIN + id.toString();
+    console.log("Requested URL: " + shortUrl);
+    var longLink = await findUrl(shortUrl);
+    if (longLink === -1){
+      reject(new InvalidURLException(shortUrl));
+    } else {
+      console.log("Redirecting to " + longLink);
+      response.redirect(longLink);
+    }
+  })
+}
 
 function handleShortenUrl(request, response){
   return new Promise( async function(resolve, reject){
@@ -96,6 +116,30 @@ async function findShortUrl(url) {
           } else {
             //console.log(data[0].short_url);
             resolve(data[0].short_url);  
+          }
+        });
+        db.close();
+      }
+    })
+  })
+}
+
+async function findUrl(url) {
+  return new Promise(async function(resolve, reject){
+    mongoClient.connect(dbConn, async function (err, db) {
+      if (err) {
+        console.log("Unable to connect to server [getShortUrl]", err);
+        reject(new DataBaseConnectionException(err));
+      } else {
+        console.log("Connected to server [getShortUrl]");
+        db.collection("urls").find({"short_url": url}).toArray(async function(err, data){
+          if (err) throw new err;
+          if(data.length === 0) {
+            console.log("No record found for " + url);
+            resolve(-1);
+          } else {
+            //console.log(data[0].short_url);
+            resolve(data[0].original_url);  
           }
         });
         db.close();
@@ -196,7 +240,4 @@ function insertUrl(doc){
   })
 };
 
-// listen for requests :)
-var listener = app.listen(process.env.PORT, function () {
-  console.log('Your app is listening on port ' + listener.address().port);
-});
+
